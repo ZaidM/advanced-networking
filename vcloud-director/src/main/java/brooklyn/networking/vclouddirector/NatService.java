@@ -223,24 +223,34 @@ public class NatService {
     private VcloudClient newVcloudClient(String arg0, String identity, String credential, String trustStore, String trustStorePassword) {
     	try {
     		// Client login
-    		// FIXME Why turn log level off?
-    		//VcloudClient.setLogLevel(Level.OFF);
-			VcloudClient result = new VcloudClient(arg0, Version.V5_5);
-	
-			// Performing Certificate Validation
+            VcloudClient vcloudClient = null;
+            boolean versionFound = false;
+            for (Version version : new Version[]{Version.V5_5, Version.V5_1, Version.V1_5}) {
+                try {
+                    if (!versionFound) {
+                        vcloudClient = new VcloudClient(arg0, version);
+                        LOG.error("VCloudClient - Trying login using " + version);
+                        vcloudClient.login(identity, credential);
+                        versionFound = true;
+                        break;
+                    }
+                } catch (VCloudException e) {
+                    LOG.error("VCloudClient - Cannot login using " + version);
+                }
+            }
+            /*
+            // Performing Certificate Validation
 			if (trustStore != null) {
 				System.setProperty("javax.net.ssl.trustStore", trustStore);
 				System.setProperty("javax.net.ssl.trustStorePassword", trustStorePassword);
-				result.registerScheme("https", 443, CustomSSLSocketFactory.getInstance());
+				vcloudClient.registerScheme("https", 443, CustomSSLSocketFactory.getInstance());
 				
 			} else {
-				System.err
-						.println("Ignoring the Certificate Validation using FakeSSLSocketFactory.java - DO NOT DO THIS IN PRODUCTION");
-				result.registerScheme("https", 443, FakeSSLSocketFactory.getInstance());
+                LOG.error("Ignoring the Certificate Validation using FakeSSLSocketFactory.java - DO NOT DO THIS IN PRODUCTION");
+                vcloudClient.registerScheme("https", 443, FakeSSLSocketFactory.getInstance());
 			}
-	
-			result.login(identity, credential);
-			return result;
+			*/
+			return vcloudClient;
 			
     	} catch (Exception e) {
     		throw Exceptions.propagate(e);
